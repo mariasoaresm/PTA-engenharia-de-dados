@@ -2,11 +2,11 @@ import pandas as pd
 
 MAPA_STATUS_PEDIDOS = {
     'delivered': 'entregue',
-    'shipped': 'enviado',
-    'canceled': 'cancelado',
-    'unavailable': 'indisponivel',
     'invoiced': 'faturado',
-    'processing': 'processando',
+    'shipped': 'enviado',
+    'processing': 'em processamento',
+    'unavailable': 'indisponivel',
+    'canceled': 'cancelado',
     'created': 'criado',
     'approved': 'aprovado'
 }
@@ -17,7 +17,7 @@ def olist_orders_dataset(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.copy()
 
-    # 1. IDs para String
+    # 1. IDs para Strings
     columns_id = ['order_id', 'customer_id', 'order_status']
     for column in columns_id:
         df[column] = df[column].astype(str)
@@ -39,7 +39,26 @@ def olist_orders_dataset(df: pd.DataFrame) -> pd.DataFrame:
     ]
 
     for column in columns_datas:
-        df[column] = pd.to_datetime(df[column], errors='coerce') 
+        df[column] = pd.to_datetime(df[column], errors='coerce')
+
+    # 4. Criação das Colunas derivadas
+    # tempo de entrega em dias
+    df['tempo_entrega_dias'] = (df['order_delivered_customer_date'] - df['order_purchase_timestamp']).dt.days
+
+    # tempoo estimado de entrega em dias
+    df['tempo_entrega_estimado_dias'] = (df['order_estimated_delivery_date'] - df['order_purchase_timestamp']).dt.days
+
+    # diferenca entre o tempo estimado e o tempo real de entrega
+    df['diferenca_entrega_dias'] = df['tempo_entrega_dias'] - df['tempo_entrega_estimado_dias']
+
+    # --- logica de check de entrega ---
+    df['entrega_no_prazo'] = 'Não'
+
+    prazo_condition = df['diferenca_entrega_dias'] <= 0
+    df.loc[prazo_condition, 'entrega_no_prazo'] = 'Sim'
+
+    no_delivery_condition = df['order_delivered_customer_date'].isnull()
+    df.loc[no_delivery_condition, 'entrega_no_prazo'] = 'Não Entregue'
 
     return df
 
