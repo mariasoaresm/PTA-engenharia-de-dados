@@ -2,11 +2,11 @@ import pandas as pd
 
 MAPA_STATUS_PEDIDOS = {
     'delivered': 'entregue',
-    'shipped': 'enviado',
-    'canceled': 'cancelado',
-    'unavailable': 'indisponivel',
     'invoiced': 'faturado',
-    'processing': 'processando',
+    'shipped': 'enviado',
+    'processing': 'em processamento',
+    'unavailable': 'indisponivel',
+    'canceled': 'cancelado',
     'created': 'criado',
     'approved': 'aprovado'
 }
