@@ -48,7 +48,7 @@ Este projeto foi desenvolvido para o Processo de Treinamento de Área (PTA) do C
 2. Clone o repositório:
 
    ```sh
-   git clone https://github.com/CITi-UFPE/PTA-engenharia-de-dados.git
+ [  git clone https://github.com/CITi-UFPE/PTA-engenharia-de-dados.git](https://github.com/mariasoaresm/PTA-engenharia-de-dados.git)
    ```
 
 3. Entre na pasta do projeto:
