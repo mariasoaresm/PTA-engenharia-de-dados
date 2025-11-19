@@ -17,7 +17,7 @@ def olist_orders_dataset(df: pd.DataFrame) -> pd.DataFrame:
     """
     df = df.copy()
 
-    # 1. IDs para String
+    # 1. IDs para Strings
     columns_id = ['order_id', 'customer_id', 'order_status']
     for column in columns_id:
         df[column] = df[column].astype(str)
