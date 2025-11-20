@@ -1,3 +1,6 @@
+import pandas as pd
+import numpy as np
+
 def tratar_outliers_iqr(df, coluna, fator_iqr=1.5, metodo='capping'):
 
     # 1. Calcular Q1, Q3 e IQR (necessita de Pandas para .quantile())
