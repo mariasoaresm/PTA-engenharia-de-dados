@@ -100,8 +100,12 @@ def limpar_produtos(df: pd.DataFrame) -> pd.DataFrame:
     for col in cols_dims:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
+
+            # REGRA DE SEGURANÇA: Usar 0 se a mediana dor NaN
             mediana = df[col].median()
-            df[col] = df[col].fillna(mediana)
+            mediana_segura = mediana if not pd.isna(mediana) else 0
+
+            df[col] = df[col].fillna(mediana_segura)
             df = tratar_outliers_iqr(df, col, metodo='capping')
 
     return df
@@ -126,7 +130,12 @@ def limpar_itens(df: pd.DataFrame) -> pd.DataFrame:
     for col in ['price', 'freight_value']:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
-            df[col] = df[col].fillna(df[col].median())
+
+            # REGRA DE SEGURANÇA: Usar 0 se a mediana for NaN
+            mediana = df[col].median()
+            mediana_segura = mediana if not pd.isna(mediana) else 0
+
+            df[col] = df[col].fillna(mediana_segura)
             df = tratar_outliers_iqr(df, col, metodo='capping')
             
     return df
