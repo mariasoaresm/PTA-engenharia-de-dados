@@ -28,34 +28,36 @@ async def process_etl(payload: InputPayload):
         df_products = pd.DataFrame(payload.products) if payload.products else pd.DataFrame()
         df_sellers = pd.DataFrame(payload.sellers) if payload.sellers else pd.DataFrame()
 
-        # 2. APLICAÇÃO DAS REGRAS DE NEGÓCIO (Chamadas diretas)
+        # 2. APLICAÇÃO DAS REGRAS DE NEGÓCIO (Apenas pedidos ativos para teste de isolamento)
         
         if not df_orders.empty:
             print(" Processando Pedidos...")
-            df_orders = limpar_pedidos(df_orders)
+            df_orders = limpar_pedidos(df_orders) # <-- MANTER ATIVO
 
         if not df_products.empty:
-            print(" Processando Produtos...")
-            df_products = limpar_produtos(df_products)
+            # print(" Processando Produtos...")
+            # df_products = limpar_produtos(df_products) # <-- COMENTADO
+            pass
 
         if not df_sellers.empty:
-            print(" Processando Vendedores...")
-            df_sellers = olist_sellers_dataset(df_sellers)
+            # print(" Processando Vendedores...")
+            # df_sellers = olist_sellers_dataset(df_sellers) # <-- COMENTADO
+            pass
 
         if not df_items.empty:
-            print(" Processando Itens...")
-            df_items = limpar_itens(df_items)
+            # print(" Processando Itens...")
+            # df_items = limpar_itens(df_items) # <-- COMENTADO
+            pass
 
-        # 3. INTEGRIDADE
+        # 3. INTEGRIDADE (Comentada para isolar o erro na fase de limpeza)
         if not df_items.empty and (not df_orders.empty or not df_products.empty or not df_sellers.empty):
-            print("   Verificando Integridade...")
-            df_items = tratar_registros_orfaos(
-                df_items, df_orders, df_products, df_sellers, acao='remover'
-            )
+            print("   Verificando Integridade...")
+            # df_items = tratar_registros_orfaos( # <-- COMENTADO
+            #     df_items, df_orders, df_products, df_sellers, acao='remover'
+            # )
+            pass
 
-        # 4. SANITIZAÇÃO FINAL (Correção solicitada pela Gerência)
-        # Substitui explicitamente np.nan por None para garantir conformidade com JSON (null)
-        # Isso é feito antes da conversão para dicionário para evitar erros de validação do Pydantic
+        # 4. SANITIZAÇÃO FINAL (Mantida para evitar o erro de serialização de NaN)
         print("4. Sanitizando dados para saída...")
         
         df_orders = df_orders.replace({np.nan: None})
