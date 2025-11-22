@@ -1,6 +1,7 @@
 import pandas as pd
+import numpy as np
 from app.services.adjust_outliers import tratar_outliers_iqr
-#logica correta
+
 # Dicionário de tradução de status conforme requisito
 MAPA_STATUS_PEDIDOS = {
     'delivered': 'entregue',
@@ -15,12 +16,6 @@ MAPA_STATUS_PEDIDOS = {
 
 
 def limpar_pedidos(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Lógica pesada de transformação para PEDIDOS:
-    1. Datas (conversão).
-    2. Status (tradução).
-    3. Métricas (atraso, prazo).
-    """
     if df.empty:
         return df
     
@@ -36,7 +31,7 @@ def limpar_pedidos(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = pd.to_datetime(df[col], errors='coerce', utc=True)
             
-    # Validação de Regras de Negócio (Datas)
+    # Validação de Regras de Negócio (Colunas DQ - Comentadas na análise de erro, mas mantidas)
     if 'order_delivered_customer_date' in df.columns and 'order_purchase_timestamp' in df.columns:
         df['dq_erro_cronologia'] = df['order_delivered_customer_date'] < df['order_purchase_timestamp']
     
@@ -50,23 +45,30 @@ def limpar_pedidos(df: pd.DataFrame) -> pd.DataFrame:
         df['order_status'] = df['order_status'].map(MAPA_STATUS_PEDIDOS).fillna(df['order_status'])
 
     # 3. Engenharia de Atributos (Métricas de Tempo)
+    # COMENTE ESTES BLOCOS SE O ERRO 500 PERSISTIR AQUI!
     if 'order_delivered_customer_date' in df.columns and 'order_purchase_timestamp' in df.columns:
         df['tempo_entrega_dias'] = (df['order_delivered_customer_date'] - df['order_purchase_timestamp']).dt.days
 
     if 'order_estimated_delivery_date' in df.columns and 'order_purchase_timestamp' in df.columns:
         df['tempo_entrega_estimado_dias'] = (df['order_estimated_delivery_date'] - df['order_purchase_timestamp']).dt.days
 
-    # Lógica Estrita do Desafio: Sim, Não, Não Entregue
+    # Lógica Estrita do Desafio: Sim, Não, Não Entregue (CORREÇÃO DE LÓGICA DE NULL)
     def verificar_prazo(row):
-        # 1. Se não tem data de entrega real -> "Não Entregue"
-        if pd.isnull(row.get('order_delivered_customer_date')):
+        data_entrega = row.get('order_delivered_customer_date')
+        data_estimada = row.get('order_estimated_delivery_date')
+
+        # 1. Se a data de entrega real é nula/NaT
+        if pd.isnull(data_entrega):
             return 'Não Entregue'
 
-        # 2. Se Entrega Real <= Estimada -> "Sim" (No prazo)
-        if row['order_delivered_customer_date'] <= row['order_estimated_delivery_date']:
+        # 2. Se a entrega ocorreu, mas a data estimada é nula
+        if pd.isnull(data_estimada):
+            return 'Não'
+        
+        # 3. Faz a comparação APENAS se ambas as datas são válidas
+        if data_entrega <= data_estimada:
             return 'Sim'
         else:
-            # 3. Caso contrário (Atrasado ou data estimada nula) -> "Não"
             return 'Não'
 
     if 'order_delivered_customer_date' in df.columns and 'order_estimated_delivery_date' in df.columns:
@@ -76,11 +78,6 @@ def limpar_pedidos(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def limpar_produtos(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Lógica pesada para PRODUTOS:
-    1. Texto (categoria).
-    2. Estatística (mediana e outliers).
-    """
     if df.empty:
         return df
         
@@ -101,7 +98,7 @@ def limpar_produtos(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-            # REGRA DE SEGURANÇA: Usar 0 se a mediana dor NaN
+            # CORREÇÃO: REGRA DE SEGURANÇA para mediana (evita NaN no fillna)
             mediana = df[col].median()
             mediana_segura = mediana if not pd.isna(mediana) else 0
 
@@ -112,11 +109,6 @@ def limpar_produtos(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def limpar_itens(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Lógica para ITENS:
-    1. Datas básicas.
-    2. Estatística de preços (mediana/outliers).
-    """
     if df.empty:
         return df
         
@@ -131,7 +123,7 @@ def limpar_itens(df: pd.DataFrame) -> pd.DataFrame:
         if col in df.columns:
             df[col] = pd.to_numeric(df[col], errors='coerce')
 
-            # REGRA DE SEGURANÇA: Usar 0 se a mediana for NaN
+            # CORREÇÃO: REGRA DE SEGURANÇA para mediana (evita NaN no fillna)
             mediana = df[col].median()
             mediana_segura = mediana if not pd.isna(mediana) else 0
 
@@ -148,9 +140,6 @@ def olist_order_items_dataset(df): return limpar_itens(df)
 
 
 def olist_sellers_dataset(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Tratamento da tabela de VENDEDORES (Sellers).
-    """
     df = df.copy()
 
     # 1. Garantia de Tipos (String)
@@ -172,4 +161,3 @@ def olist_sellers_dataset(df: pd.DataFrame) -> pd.DataFrame:
     df['seller_state'] = df['seller_state'].str.upper().str.strip()
 
     return df
-
