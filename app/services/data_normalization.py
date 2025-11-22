@@ -1,7 +1,6 @@
 import pandas as pd
-# Importamos a função de outliers para usar dentro da limpeza de produtos/itens
 from app.services.adjust_outliers import tratar_outliers_iqr
-
+#logica correta
 # Dicionário de tradução de status conforme requisito
 MAPA_STATUS_PEDIDOS = {
     'delivered': 'entregue',
@@ -13,6 +12,7 @@ MAPA_STATUS_PEDIDOS = {
     'created': 'criado',
     'approved': 'aprovado'
 }
+
 
 def limpar_pedidos(df: pd.DataFrame) -> pd.DataFrame:
     """
