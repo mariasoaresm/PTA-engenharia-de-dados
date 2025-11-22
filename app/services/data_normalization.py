@@ -13,6 +13,7 @@ MAPA_STATUS_PEDIDOS = {
     'approved': 'aprovado'
 }
 
+
 def limpar_pedidos(df: pd.DataFrame) -> pd.DataFrame:
     """
     Lógica pesada de transformação para PEDIDOS:
