@@ -4,7 +4,6 @@ import numpy as np
 def tratar_outliers_iqr(df, coluna, fator_iqr=1.5, metodo='capping'):
 
     # REGRA DE SEGURANÇA: Retorna DF original se for muito pequeno
-    # O cálculo de IQR/Quantis é instável ou inválido em conjuntos pequenos
     if len(df) < 3:
         print(f"AVISO: DataFrame muito pequeno para coluna {coluna}")
         return df
