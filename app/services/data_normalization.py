@@ -1,6 +1,6 @@
 import pandas as pd
 from app.services.adjust_outliers import tratar_outliers_iqr
-
+#logica correta
 # Dicionário de tradução de status conforme requisito
 MAPA_STATUS_PEDIDOS = {
     'delivered': 'entregue',
