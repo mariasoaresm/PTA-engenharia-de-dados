@@ -1,5 +1,4 @@
 import pandas as pd
-# Importamos a função de outliers para usar dentro da limpeza de produtos/itens
 from app.services.adjust_outliers import tratar_outliers_iqr
 
 # Dicionário de tradução de status conforme requisito
