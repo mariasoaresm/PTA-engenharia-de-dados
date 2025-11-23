@@ -45,12 +45,19 @@ def limpar_pedidos(df: pd.DataFrame) -> pd.DataFrame:
         df['order_status'] = df['order_status'].map(MAPA_STATUS_PEDIDOS).fillna(df['order_status'])
 
     # 3. Engenharia de Atributos (Métricas de Tempo)
-    # COMENTE ESTES BLOCOS SE O ERRO 500 PERSISTIR AQUI!
+    
+    # A) Tempo Real (Entrega - Compra)
     if 'order_delivered_customer_date' in df.columns and 'order_purchase_timestamp' in df.columns:
         df['tempo_entrega_dias'] = (df['order_delivered_customer_date'] - df['order_purchase_timestamp']).dt.days
 
+    # B) Tempo Estimado (Estimativa - Compra)
     if 'order_estimated_delivery_date' in df.columns and 'order_purchase_timestamp' in df.columns:
         df['tempo_entrega_estimado_dias'] = (df['order_estimated_delivery_date'] - df['order_purchase_timestamp']).dt.days
+
+    # C) Diferença Real vs Estimado
+    # Entrega Real - Estimativa. (Negativo = Adiantado, Positivo = Atrasado)
+    if 'order_delivered_customer_date' in df.columns and 'order_estimated_delivery_date' in df.columns:
+        df['diferenca_entrega_dias'] = (df['order_delivered_customer_date'] - df['order_estimated_delivery_date']).dt.days
 
     # Lógica Estrita do Desafio: Sim, Não, Não Entregue (CORREÇÃO DE LÓGICA DE NULL)
     def verificar_prazo(row):
