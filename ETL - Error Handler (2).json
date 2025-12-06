@@ -1,0 +1,63 @@
+{
+  "name": "ETL - Error Handler",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "89dce605-24d6-40a6-8f32-60718f10b67f",
+      "name": "Ao ocorrer Erro",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        -336,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "theobarza@gmail.com",
+        "subject": "❌ ALERTA: Falha Crítica no ETL - {{$json.workflow.name}}",
+        "message": "Ocorreu um erro durante a execução do pipeline.\n\n--------------------------------------------------\n📋 DETALHES DO ERRO:\n--------------------------------------------------\n\n🔴 Workflow: {{$json.workflow.name}}\n\n⚠️ Mensagem de Erro:\n{{$json.execution.error.message}}\n\n📍 Último Nó Executado:\n{{$json.execution.lastNodeExecuted}}\n\n🔗 Link para Inspeção:\n{{$json.execution.url}}\n\n--------------------------------------------------\nVerifique o n8n imediatamente.",
+        "options": {}
+      },
+      "id": "89010740-8426-4799-bbf8-850d1e1cdb78",
+      "name": "Notificar Erro (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -112,
+        -96
+      ],
+      "webhookId": "a2b0e225-d9f8-48b0-b1db-5905937b09cb",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ucbuul48G1bQCdJs",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Ao ocorrer Erro": {
+      "main": [
+        [
+          {
+            "node": "Notificar Erro (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "96096de7-b7e6-4467-b4a5-45a63310d171",
+  "meta": {
+    "instanceId": "f1bc3ecac02555baea19f1f1bf294eef5f77f8bea49a58f05f3b3f796b2869f4"
+  },
+  "id": "eyVIPWVeoJMJYypb",
+  "tags": []
+}

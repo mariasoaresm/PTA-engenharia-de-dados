@@ -1,0 +1,423 @@
+{
+  "name": "ETL - Produtos (PRODUÇÃO - OTIMIZADO)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        544,
+        560
+      ],
+      "id": "bf8b3df8-1770-469f-a58b-c227b8e59bb1",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Z7YG1A70aLo6NhnK6G8PvvnR-yZILmkDosTFq2bMMgc",
+          "mode": "list",
+          "cachedResultName": "[Duda] DataLake",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z7YG1A70aLo6NhnK6G8PvvnR-yZILmkDosTFq2bMMgc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 263580706,
+          "mode": "list",
+          "cachedResultName": "produtos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z7YG1A70aLo6NhnK6G8PvvnR-yZILmkDosTFq2bMMgc/edit#gid=263580706"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange",
+              "firstDataRow": "={{ $json.last }}"
+            }
+          }
+        }
+      },
+      "id": "ca431cc0-85ec-4f71-be9f-a90972b57f62",
+      "name": "2. Ler Tabela Produtos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        944,
+        672
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const last = parseInt(items[0].json.last || \"1\");\nreturn [{ json: { last } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        816,
+        560
+      ],
+      "id": "22efaff1-6158-42f4-9dc7-ebb42fd2d32b",
+      "name": "Extrair ultima linha"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pta-engenharia-de-dados-1-ywa7.onrender.com/process",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\nJSON.stringify({\n  \"orders\": [],\n  \"items\": [],\n  \"sellers\": [],\n  \"products\": $('2. Ler Tabela Produtos').all().map(item => item.json)\n})\n}}",
+        "options": {}
+      },
+      "id": "381b99df-b9a2-4d8d-9152-6d4d22416f8b",
+      "name": "4. Envia API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1072,
+        560
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const response = items[0].json;\n\n// Tenta localizar a lista de produtos tratados\n// Verifica se está em data.products (padrão da sua API) ou na raiz\nlet listaProdutos = [];\n\nif (response.data && response.data.products) {\n    listaProdutos = response.data.products;\n} else if (response.products) {\n    listaProdutos = response.products;\n}\n\n// Retorna item por item para gravar no Sheets\nreturn listaProdutos.map(p => ({ json: p }));"
+      },
+      "id": "41834a11-7d9a-41bf-8aaa-3a0e4a9f015a",
+      "name": "5. Code: Formata Resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1200,
+        672
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Pega o valor antigo da configuração\nconst last = parseInt($(\"Extrair ultima linha\").first().json.last || 0);\n\n// 2. Conta quantas linhas foram lidas DIRETAMENTE da tabela original\n// O nó \"2. Ler Tabela Pedidos\" tem a lista explodida (item por item)\nconst rows = $(\"2. Ler Tabela Produtos\").all().length; \n\n// 3. Calcula o novo total\n// Se last era 1 e leu 3095 linhas, o novo last será 3096\nconst newLast = last + rows;\n\nreturn [\n {\n json: {\n id: 1, // A Âncora para o Update\n last: newLast // O número correto da última linha\n }\n }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1552,
+        560
+      ],
+      "id": "d565c413-854e-465f-9702-1453d3acc06c",
+      "name": "Calcular newLast"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8",
+          "mode": "list",
+          "cachedResultName": "DataLake_tratado",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 550465022,
+          "mode": "list",
+          "cachedResultName": "config_produtos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit#gid=550465022"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "last": "={{ $json.last }}",
+            "id": "={{ $json.id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "last",
+              "displayName": "last",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1712,
+        656
+      ],
+      "id": "21a56ac7-fd0d-4805-9ef2-bb1f0705a51d",
+      "name": "Update ultima_linha",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "theobarza@gmail.com",
+        "subject": "[SUCESSO] Pipeline O-Market concluído",
+        "message": "A rotina de ETL de Produtos foi concluída com sucesso.|Detalhes:- Fluxo: ETL - Pedidos (Full Load).- Status: OK.",
+        "options": {}
+      },
+      "id": "2e65a51d-59ae-42a0-b728-c511d240c2c9",
+      "name": "8. Notificar Sucesso (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1840,
+        560
+      ],
+      "webhookId": "2a2ab90a-5486-4b2d-b545-30706cb68a34",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ucbuul48G1bQCdJs",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8",
+          "mode": "list",
+          "cachedResultName": "DataLake_tratado",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1584491148,
+          "mode": "list",
+          "cachedResultName": "produtos_tratados",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit#gid=1584491148"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "9b034c70-64c4-4763-834e-5e5489baed4b",
+      "name": "Grava produtos_tratados",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.3,
+      "position": [
+        1328,
+        560
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8",
+          "mode": "list",
+          "cachedResultName": "DataLake_tratado",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 550465022,
+          "mode": "list",
+          "cachedResultName": "config_produtos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit#gid=550465022"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRangeA1",
+              "range": "A:B"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        688,
+        672
+      ],
+      "id": "5375444e-4dec-44d0-a6ce-64e7eeae21a4",
+      "name": "ler config_produtos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "ler config_produtos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Ler Tabela Produtos": {
+      "main": [
+        [
+          {
+            "node": "4. Envia API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair ultima linha": {
+      "main": [
+        [
+          {
+            "node": "2. Ler Tabela Produtos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Envia API": {
+      "main": [
+        [
+          {
+            "node": "5. Code: Formata Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Code: Formata Resposta": {
+      "main": [
+        [
+          {
+            "node": "Grava produtos_tratados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular newLast": {
+      "main": [
+        [
+          {
+            "node": "Update ultima_linha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update ultima_linha": {
+      "main": [
+        [
+          {
+            "node": "8. Notificar Sucesso (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grava produtos_tratados": {
+      "main": [
+        [
+          {
+            "node": "Calcular newLast",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ler config_produtos": {
+      "main": [
+        [
+          {
+            "node": "Extrair ultima linha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "eyVIPWVeoJMJYypb"
+  },
+  "versionId": "c58b3333-9a0f-4e65-9cb5-fec46c3f2a4b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f1bc3ecac02555baea19f1f1bf294eef5f77f8bea49a58f05f3b3f796b2869f4"
+  },
+  "id": "zRjgWggSVjyAlngs",
+  "tags": []
+}

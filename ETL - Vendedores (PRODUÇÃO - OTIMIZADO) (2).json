@@ -1,0 +1,423 @@
+{
+  "name": "ETL - Vendedores (PRODUÇÃO - OTIMIZADO)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        2096,
+        1424
+      ],
+      "id": "c19a8beb-8ec2-445e-b861-d61e57b64251",
+      "name": "Schedule Trigger1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const last = parseInt(items[0].json.last || \"1\");\nreturn [{ json: { last } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2384,
+        1424
+      ],
+      "id": "d6674614-5323-4261-b5a0-fa0385ea12f9",
+      "name": "Extrair ultima linha1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Pega o valor antigo da configuração\nconst last = parseInt($(\"Extrair ultima linha1\").first().json.last || 0);\n\n// 2. Conta quantas linhas foram lidas DIRETAMENTE da tabela original\n// O nó \"2. Ler Tabela Pedidos\" tem a lista explodida (item por item)\nconst rows = $(\"2. Ler Tabela Vendedores\").all().length; \n\n// 3. Calcula o novo total\n// Se last era 1 e leu 3095 linhas, o novo last será 3096\nconst newLast = last + rows;\n\nreturn [\n {\n json: {\n id: 1, // A Âncora para o Update\n last: newLast // O número correto da última linha\n }\n }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3216,
+        1424
+      ],
+      "id": "9bf40d7f-d525-4683-91c0-b33350928ba1",
+      "name": "Calcular newLast1"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pta-engenharia-de-dados-1-ywa7.onrender.com/process",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\nJSON.stringify({\n  \"orders\": [],\n  \"products\": [],\n  \"items\": [],  // <--- AQUI ESTAVA O ERRO (era \"order_items\")\n  \"sellers\": $('2. Ler Tabela Vendedores').all().map(item => {\n      return {\n          \"seller_id\": item.json.seller_id,\n          \"seller_zip_code_prefix\": item.json.seller_zip_code_prefix,\n          \"seller_city\": item.json.seller_city,\n          \"seller_state\": item.json.seller_state\n      }\n  })\n})\n}}",
+        "options": {}
+      },
+      "id": "d08df034-4cc8-4e6d-821d-2b4ed475ae20",
+      "name": "4. Envia API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        2688,
+        1424
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Pega o corpo da resposta da API\nconst response = items[0].json;\n\n// 2. Tenta localizar a lista de vendedores tratados.\n// O código Python sugere que volta dentro de \"data.sellers\" ou na raiz \"sellers\".\n// Este código cobre as duas possibilidades para garantir.\nlet listaVendedores = [];\n\nif (response.data && response.data.sellers) {\n    listaVendedores = response.data.sellers;\n} else if (response.sellers) {\n    listaVendedores = response.sellers;\n}\n\n// 3. Retorna cada vendedor como um item individual para o n8n\n// Isso permite que o próximo nó (Google Sheets) grave linha por linha.\nreturn listaVendedores.map(vendedor => ({ json: vendedor }));"
+      },
+      "id": "8d2f0b9a-410b-4e57-a897-6371323ff38b",
+      "name": "5. Code: Formata Resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2848,
+        1552
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8",
+          "mode": "list",
+          "cachedResultName": "DataLake_tratado",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 179053289,
+          "mode": "list",
+          "cachedResultName": "vendedores_tratados",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit#gid=179053289"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "50451ab4-5c67-479f-b37b-97b32702a2b2",
+      "name": "6. Grava Google Sheets (Write/Replace)",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.3,
+      "position": [
+        3008,
+        1424
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "theobarza@gmail.com",
+        "subject": "[SUCESSO] Pipeline O-Market concluído",
+        "message": "A rotina de ETL de Vendedores foi concluída com sucesso.|Detalhes:- Fluxo: ETL - Pedidos (Full Load).- Status: OK.",
+        "options": {}
+      },
+      "id": "6e0c3876-c619-4676-90c9-d9eb4fa4082d",
+      "name": "8. Notificar Sucesso (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        3536,
+        1424
+      ],
+      "webhookId": "2a2ab90a-5486-4b2d-b545-30706cb68a34",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ucbuul48G1bQCdJs",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8",
+          "mode": "list",
+          "cachedResultName": "DataLake_tratado",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 778450521,
+          "mode": "list",
+          "cachedResultName": "config_vendedores",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit#gid=778450521"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "last": "={{ $json.last }}",
+            "id": "={{ $json.id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "last",
+              "displayName": "last",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        3392,
+        1552
+      ],
+      "id": "eeeb1235-7a24-4609-9eaf-592dabd9ef30",
+      "name": "Update row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Z7YG1A70aLo6NhnK6G8PvvnR-yZILmkDosTFq2bMMgc",
+          "mode": "list",
+          "cachedResultName": "[Duda] DataLake",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z7YG1A70aLo6NhnK6G8PvvnR-yZILmkDosTFq2bMMgc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1748074059,
+          "mode": "list",
+          "cachedResultName": "vendedores",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z7YG1A70aLo6NhnK6G8PvvnR-yZILmkDosTFq2bMMgc/edit#gid=1748074059"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange",
+              "firstDataRow": "={{ $json.last }}"
+            }
+          }
+        }
+      },
+      "id": "53daec63-868d-41b2-b3d1-0b9da6ea9a69",
+      "name": "2. Ler Tabela Vendedores",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        2528,
+        1536
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8",
+          "mode": "list",
+          "cachedResultName": "DataLake_tratado",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 778450521,
+          "mode": "list",
+          "cachedResultName": "config_vendedores",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit#gid=778450521"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRangeA1",
+              "range": "A:B"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2240,
+        1536
+      ],
+      "id": "8611ded8-3e93-48b2-9a2f-d44772556092",
+      "name": "ler config_vendedores",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger1": {
+      "main": [
+        [
+          {
+            "node": "ler config_vendedores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair ultima linha1": {
+      "main": [
+        [
+          {
+            "node": "2. Ler Tabela Vendedores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular newLast1": {
+      "main": [
+        [
+          {
+            "node": "Update row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Envia API": {
+      "main": [
+        [
+          {
+            "node": "5. Code: Formata Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Code: Formata Resposta": {
+      "main": [
+        [
+          {
+            "node": "6. Grava Google Sheets (Write/Replace)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "6. Grava Google Sheets (Write/Replace)": {
+      "main": [
+        [
+          {
+            "node": "Calcular newLast1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update row in sheet": {
+      "main": [
+        [
+          {
+            "node": "8. Notificar Sucesso (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Ler Tabela Vendedores": {
+      "main": [
+        [
+          {
+            "node": "4. Envia API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ler config_vendedores": {
+      "main": [
+        [
+          {
+            "node": "Extrair ultima linha1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "eyVIPWVeoJMJYypb"
+  },
+  "versionId": "25ea13c3-6d06-421c-b03e-112657568ddd",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f1bc3ecac02555baea19f1f1bf294eef5f77f8bea49a58f05f3b3f796b2869f4"
+  },
+  "id": "CXai8vfspqjJY2pM",
+  "tags": []
+}

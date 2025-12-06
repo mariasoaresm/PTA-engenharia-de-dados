@@ -1,0 +1,528 @@
+{
+  "name": "ETL - Pedidos (PRODUÇÃO - OTIMIZADO)",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Este nó limpa a memória e envia apenas 1 item para o Loop continuar\nreturn [{ json: { status: \"batch_done\" } }];"
+      },
+      "id": "34e80239-27d7-4e7d-84db-9a5e9ad0a3ed",
+      "name": "Fechar Loop",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2320,
+        1968
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        688,
+        1872
+      ],
+      "id": "918d0359-d3b5-4a94-a18d-a09f10c6cfd3",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "batchSize": 500,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1344,
+        1872
+      ],
+      "id": "56e0c478-c017-4030-af6a-b9340427c2be",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Pega o valor antigo da configuração\nconst last = parseInt($(\"Extrair ultima linha\").first().json.last || 0);\n\n// 2. Conta quantas linhas foram lidas DIRETAMENTE da tabela original\n// Acessar via nome do node garante que pegamos o total lido, não importa o lote\nconst rows = $(\"2. Ler Tabela Pedidos\").all().length; \n\n// 3. Calcula o novo total\nconst newLast = last + rows;\n\nreturn [\n {\n json: {\n id: 1, \n last: newLast\n }\n }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1520,
+        1808
+      ],
+      "id": "684b7bf4-3779-43b1-8187-0958a267326a",
+      "name": "Calcular newLast"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8",
+          "mode": "list",
+          "cachedResultName": "DataLake_tratado",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1527647652,
+          "mode": "list",
+          "cachedResultName": "config_pedidos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit#gid=1527647652"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRangeA1",
+              "range": "A:B"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        848,
+        1872
+      ],
+      "id": "e44a3764-9325-4a38-bedc-5e638d2c599a",
+      "name": "ler config_pedidos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const last = parseInt(items[0].json.last || \"1\");\nreturn [{ json: { last } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        1872
+      ],
+      "id": "3cc3e75d-39f1-450b-8834-9404c2ac8efa",
+      "name": "Extrair ultima linha"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1Z7YG1A70aLo6NhnK6G8PvvnR-yZILmkDosTFq2bMMgc",
+          "mode": "list",
+          "cachedResultName": "[Duda] DataLake",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z7YG1A70aLo6NhnK6G8PvvnR-yZILmkDosTFq2bMMgc/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1963108074,
+          "mode": "list",
+          "cachedResultName": "pedidos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1Z7YG1A70aLo6NhnK6G8PvvnR-yZILmkDosTFq2bMMgc/edit#gid=1963108074"
+        },
+        "options": {
+          "dataLocationOnSheet": {
+            "values": {
+              "rangeDefinition": "specifyRange",
+              "firstDataRow": "={{ $json.last }}"
+            }
+          }
+        }
+      },
+      "id": "26119911-9275-4283-bb68-098de8d10ac5",
+      "name": "2. Ler Tabela Pedidos",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 3,
+      "position": [
+        1168,
+        1872
+      ],
+      "executeOnce": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Pega todos os itens que saíram do Loop e extrai o JSON deles\nconst pedidos = items.map(item => item.json);\n\n// Retorna APENAS 1 item para o próximo nó\nreturn {\n json: {\n items: [],\n products: [],\n sellers: [],\n orders: pedidos\n }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        1984
+      ],
+      "id": "08c4a49c-dfc7-47e8-b24e-393cf631811d",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8",
+          "mode": "list",
+          "cachedResultName": "DataLake_tratado",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1527647652,
+          "mode": "list",
+          "cachedResultName": "config_pedidos",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit#gid=1527647652"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "last": "={{ $json.last }}",
+            "id": "={{ $json.id }}"
+          },
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "last",
+              "displayName": "last",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1680,
+        1808
+      ],
+      "id": "e079d4df-50f6-4546-aba5-d7683f9693cc",
+      "name": "Update ultima_linha",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "theobarza@gmail.com",
+        "subject": "[SUCESSO] Pipeline O-Market concluído",
+        "message": "A rotina de ETL de Pedidos foi concluída com sucesso.|Detalhes:- Fluxo: ETL - Pedidos (Full Load).- Status: OK.",
+        "options": {}
+      },
+      "id": "2f49cdc3-0cc1-47a1-90e3-ca8b3fd62198",
+      "name": "8. Notificar Sucesso (Gmail)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1840,
+        1808
+      ],
+      "webhookId": "2a2ab90a-5486-4b2d-b545-30706cb68a34",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ucbuul48G1bQCdJs",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8",
+          "mode": "list",
+          "cachedResultName": "DataLake_tratado",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 863678672,
+          "mode": "list",
+          "cachedResultName": "pedidos_tratados",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19opK9Upc5wf3Bu7YhukWT0mIrhhZYR0AspOIzyGAiz8/edit#gid=863678672"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "id": "ff2e4bf9-cab6-4401-90ca-3415c121a4c7",
+      "name": "Grava pedidos_tratados",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.3,
+      "position": [
+        2000,
+        1968
+      ],
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zv6KJ03Fg24Parcb",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://pta-engenharia-de-dados-1-ywa7.onrender.com/process",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "775ede94-655e-4f14-ace0-ff1079602ad4",
+      "name": "4. Envia API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1680,
+        1984
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "const resposta = items[0].json;\n\nconst pedidosTratados = resposta.orders || [];\n\nreturn pedidosTratados.map(p => ({ json: p }));\n"
+      },
+      "id": "ad75dabf-aa6b-476b-bf61-fe5a3b30c3fe",
+      "name": "5. Code: Formata Resposta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1840,
+        1984
+      ]
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2160,
+        1968
+      ],
+      "id": "0e1d3592-3517-4a1a-9a85-b563f3b9ce94",
+      "name": "Wait",
+      "webhookId": "41ee07c0-7ffe-4353-8116-abf20a58a953"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Fechar Loop": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "ler config_pedidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Calcular newLast",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calcular newLast": {
+      "main": [
+        [
+          {
+            "node": "Update ultima_linha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ler config_pedidos": {
+      "main": [
+        [
+          {
+            "node": "Extrair ultima linha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrair ultima linha": {
+      "main": [
+        [
+          {
+            "node": "2. Ler Tabela Pedidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Ler Tabela Pedidos": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "4. Envia API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update ultima_linha": {
+      "main": [
+        [
+          {
+            "node": "8. Notificar Sucesso (Gmail)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Grava pedidos_tratados": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Envia API": {
+      "main": [
+        [
+          {
+            "node": "5. Code: Formata Resposta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Code: Formata Resposta": {
+      "main": [
+        [
+          {
+            "node": "Grava pedidos_tratados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Fechar Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "eyVIPWVeoJMJYypb"
+  },
+  "versionId": "2b69dbd9-4b59-4800-a1d4-4b6921c23634",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f1bc3ecac02555baea19f1f1bf294eef5f77f8bea49a58f05f3b3f796b2869f4"
+  },
+  "id": "HC3hBZDFdWSd3ojE",
+  "tags": []
+}
